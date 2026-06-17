@@ -16,10 +16,14 @@ spec:
       labels:
         app: kleroshub
     spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      nodeSelector:
+        kubernetes.io/hostname: srv1158721
       containers:
         - name: kleroshub
-          image: ghcr.io/owner/kleroshub:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/matheusffalbuquerque/kleroshub-landing:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000

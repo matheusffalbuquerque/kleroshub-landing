@@ -66,9 +66,27 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Create or update k8s secrets
+        run: |
+          kubectl create secret generic kleroshub-secrets \
+            --namespace="$K8S_NAMESPACE" \
+            --from-literal=NEXT_PUBLIC_SITE_URL="https://hub.kleros.app" \
+            --from-literal=NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}" \
+            --from-literal=STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            --from-literal=STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            --from-literal=RESEND_API_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            --from-literal=RESEND_FROM_EMAIL="${{ secrets.RESEND_FROM_EMAIL || 'KlerosHub <noreply@kleros.app>' }}" \
+            --save-config \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply k8s manifests
+        run: |
+          kubectl apply -f k8s/namespace.yml
+          kubectl apply -f k8s/service.yml
+          kubectl apply -f k8s/deployment.yml
+
       - name: Update deployment image
         run: |
-          kubectl apply -f k8s/
           kubectl -n "$K8S_NAMESPACE" set image deployment/"$K8S_DEPLOYMENT" "$K8S_CONTAINER"="${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA}"
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/"$K8S_DEPLOYMENT" --timeout=180s
         env:
